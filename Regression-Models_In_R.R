@@ -469,3 +469,58 @@ slopedist = simpleSlope(mod5b, pred = "facebook", mod1 = "youtube")
 
 summary(slopedist)
 PlotSlope(slopedist)
+
+###############################################################################
+###### Model with Interaction between numerical and binary predictors #########
+###############################################################################
+
+mod6 <- lm(sales ~ youtube + facebook + day_type + youtube*day_type)
+summary(mod6)
+
+###############################################################################
+############################ Mediation analysis ###############################
+###############################################################################
+
+# The concept of mediation must have theoretical reasons
+# Let's replace the variables
+
+data_new=marketing_new2[,2:4]
+colnames(data_new)=c("Phisical_Activity", "Screen_time", "Obesity")
+head(data_new)
+attach(data_new)
+
+mod7a <- lm(Obesity ~ Screen_time)
+summary(mod7a)
+
+mod7b <- lm(Phisical_Activity ~ Screen_time)
+summary(mod7b)
+
+mod7c <- lm(Obesity ~ Screen_time + Phisical_Activity)
+summary(mod7c)
+
+###############################################################################
+############################ Model Selection #################################
+###############################################################################
+
+library(MASS)
+
+attach(marketing_new2)
+head(marketing_new2)
+
+mod8full <- lm(sales ~ youtube*facebook + newspaper*day_type + geo_area)
+summary(mod8full)
+
+# Stepwise regression model
+?stepAIC
+
+best_step_model <- stepAIC(mod8full, direction = "both", trace = T)
+best_step_model <- stepAIC(mod8full, direction = "both", trace = F)
+summary(best_step_model)
+
+# get AIC to compare the full model and the best selected model
+# edf	
+# the 'equivalent degrees of freedom' for the fitted model fit.
+# AIC	
+# the (generalized) Akaike Information Criterion for fit
+extractAIC(mod8full)
+extractAIC(best_step_model)
