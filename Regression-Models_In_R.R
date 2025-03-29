@@ -295,5 +295,177 @@ lawstat::runs.test(mod$residuals) # H0: random residuals
 # Method n.3 - Durbin-Watson test
 library(lmtest)
 lmtest::dwtest(mod) # H0: no autocorrelation of residuals
+##############################################################
+
+#5# The predictors and residuals are uncorrelated 
+
+# the first idea we could have is to look  for correlation but it is not a very good idea - quite useless
+
+cor.test(marketing$facebook, mod$residuals)  # H0: correlation is 0 (there is no correlation)
+cor.test(marketing$newspaper, mod$residuals)
+cor.test(marketing$youtube, mod$residuals)
+
+par(mfrow=c(2,2))
+
+plot(marketing$facebook, mod$residuals)
+plot(marketing$newspaper, mod$residuals)
+plot(marketing$youtube, mod$residuals)
+
+# this is the problem of endogeneity
+# you will see in details in econometrics
+
+# at the end of this file there is an example on how to check for endogeneity
 
 ##############################################################
+
+#6# The number of observations must be greater than number of predictors 
+
+# k+2 where k is the number of predictors. 
+# This is the minimum required to derive an error term for the model. 
+# It won't generally be a very useful or precise model 
+
+# The general rule of thumb (based on stuff in Frank Harrell's book, 
+# Regression Modeling Strategies) is that if we expect to be able to detect reasonable-size 
+# effects with reasonable power, you need 10-20 observations per parameter (covariate) estimated
+
+##############################################################
+
+#7# Absence of perfect multicollinearity 
+
+# Remove the predictors with the highest VIF and/or Look at the correlation 
+# between all variables and keep only one of all highly correlated pairs
+
+library(corrplot)
+corrplot(cor(marketing[, -1]))
+
+mod <- lm(sales ~., data=marketing)
+car::vif(mod)
+
+##############################################################
+
+# Check Some Assumptions Automatically
+
+library(gvlma)
+?gvlma::gvlma
+par(mfrow=c(2,2))  # draw 4 plots in same window
+gvlma::gvlma(mod)
+
+
+############################################################
+
+# other tools for diagnostic (instead of plot lm object)
+
+library(ggfortify)
+autoplot(mod, which = 1:6, ncol = 3, label.size = 3)
+
+resid_auxpanel(residuals = resid(mod), 
+               predicted = fitted(mod), 
+               plots = c("resid", "index"))
+
+
+##############################################################
+############# Model with a binary predictor  #################
+##############################################################
+
+# Let's add an invented binary predictor to the previous dataset
+# Holidays and working days 
+# Load the data
+data("marketing", package = "datarium")
+
+marketing
+
+dim(marketing)
+
+day_type=c(rep("Holidays",40),rep("Working Days",160))
+day_type
+day_type=as.factor(day_type)
+
+marketing_new=cbind(marketing,day_type)
+
+head(marketing_new)
+levels(day_type)
+
+attach(marketing_new)
+
+mod2 <- lm(sales ~ youtube + facebook + newspaper + day_type)
+summary(mod2)
+
+# for now we do not focus on checking the assumptions
+
+#################################################################
+### Model with a categorical predictor with many modalities  ####
+#################################################################
+
+# Let's add an invented binary predictor to the previous dataset
+# South, North, Center, Islands
+
+geo_area=c(rep("South",60),rep("North",60) ,
+           rep("Center",60) ,rep("Islands",20))
+
+geo_area=as.factor(geo_area)
+levels(geo_area)
+
+marketing_new2=cbind(marketing_new, geo_area)
+
+attach(marketing_new2)
+head(marketing_new2)
+
+mod3 <- lm(sales ~ youtube + facebook + newspaper + geo_area)
+summary(mod3)
+
+?relevel
+geo_area_new=relevel(geo_area, ref="North")
+
+mod3 <- lm(sales ~ youtube + facebook + newspaper + geo_area_new)
+summary(mod3)
+
+# for now we do not focus on checking the assumptions
+
+###############################################################################
+############# Model with Interaction between numerical predictors #############
+###############################################################################
+
+mod4 <- lm(sales ~ youtube + facebook + youtube*facebook)
+summary(mod4)
+
+# all the coefficients are statistically significant
+# there is a significant interaction between the two predictors
+
+# sales = 8.10 + 0.019*youtube + 0.029*facebook + 0.0009*youtube*facebook
+
+# We can interpret this as an increase in youtube advertising of 1000 dollars 
+# is associated with increased sales of 
+# (b1 + b3*facebook)*1000 = 19 + 0.9*facebook units. 
+# And an increase in facebook advertising of 1000 dollars will be associated 
+# with an increase in sales of (b2 + b3*youtube)*1000 = 28 + 0.9*youtube units.
+
+
+
+# simply slope analysis
+
+ # install.packages("pequod")
+
+library(pequod)
+
+# mod1 refers to the first moderator variable
+
+mod5 = lmres(sales ~ youtube * facebook,
+             centered = c("youtube", "facebook"),
+             data = marketing)
+
+slopedist = simpleSlope(mod5, pred = "youtube", mod1 = "facebook")
+
+summary(slopedist)
+PlotSlope(slopedist)
+
+
+# reverse the moderator
+
+mod5b = lmres(sales ~ youtube * facebook,
+             centered = c("youtube", "facebook"),
+             data = marketing)
+
+slopedist = simpleSlope(mod5b, pred = "facebook", mod1 = "youtube")
+
+summary(slopedist)
+PlotSlope(slopedist)
