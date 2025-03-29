@@ -524,3 +524,49 @@ summary(best_step_model)
 # the (generalized) Akaike Information Criterion for fit
 extractAIC(mod8full)
 extractAIC(best_step_model)
+
+###############################################################################
+################## Polynomial Linear Regression ###############################
+###############################################################################
+
+library(tidyverse)
+library(caret)
+
+data("Boston", package = "MASS")
+
+?Boston
+
+ggplot(Boston, aes(lstat, medv) ) +
+  geom_point() +
+  stat_smooth()
+
+attach(Boston)
+
+# simple model
+mod11 <- lm(medv ~ lstat)
+summary(mod11)
+
+library(viridisLite)  # to use the viridis function
+
+ggplot(Boston, aes(lstat, medv) ) +
+  geom_point() +
+  stat_smooth(method = lm, formula = y ~ x) +
+  geom_smooth(span   = 1,    color = viridis(1, begin = 0.6), se = FALSE, linetype =
+                "dashed")  # a clue of the real relationship
+
+# polynomial model
+lm(medv ~ lstat + I(lstat^2)) %>% summary()
+
+# alternative
+lm(medv ~ poly(lstat, 2, raw = TRUE)) %>% summary()
+
+ggplot(Boston, aes(lstat, medv) ) +
+  geom_point() +
+  stat_smooth(method = lm, formula = y ~ poly(x, 2, raw = TRUE))
+
+# add other terms
+lm(medv ~ poly(lstat, 3, raw = TRUE)) %>% summary()
+
+ggplot(Boston, aes(lstat, medv) ) +
+  geom_point() +
+  stat_smooth(method = lm, formula = y ~ poly(x, 4, raw = TRUE))
