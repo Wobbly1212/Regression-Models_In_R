@@ -570,3 +570,136 @@ lm(medv ~ poly(lstat, 3, raw = TRUE)) %>% summary()
 ggplot(Boston, aes(lstat, medv) ) +
   geom_point() +
   stat_smooth(method = lm, formula = y ~ poly(x, 4, raw = TRUE))
+
+###############################################################################
+########################### Log transformation  ###############################
+###############################################################################
+
+# pay attention to zeros
+# if the are zeros, you should transform the data
+
+lm(medv ~ log(lstat)) %>% summary
+
+lm(log(medv) ~ lstat) %>% summary
+
+lm(log(medv) ~ log(lstat)) %>% summary
+
+ggplot(Boston, aes(lstat, medv) ) +
+  geom_point() +
+  stat_smooth(method = lm, formula = y ~ log(x))
+
+hist(lstat)
+
+min(lstat)
+
+#############################################################################################
+########################### Exercise  ######################################################
+#############################################################################################
+
+# find a model for Ozone
+
+data=data(airquality)
+head(airquality)
+summary(airquality)
+dim(airquality)
+airquality_new=na.omit(airquality)
+dim(airquality_new)
+
+attach(airquality_new)
+
+pairs(airquality_new)
+cor(airquality_new)
+str(airquality_new)
+summary(airquality_new)
+
+# suppose we aim to predict ozone
+
+Day=as.factor(Day)
+Month=as.factor(Month)
+
+ggplot(airquality_new, aes(Solar.R, Ozone) ) +
+  geom_point() +
+  stat_smooth(method = lm, formula = y ~ x)
+
+ggplot(airquality_new, aes(Wind, Ozone) ) +
+  geom_point() +
+  stat_smooth(method = lm, formula = y ~ x)
+
+ggplot(airquality_new, aes(Temp, Ozone) ) +
+  geom_point() +
+  stat_smooth(method = lm, formula = y ~ x)
+
+ggplot(airquality_new, aes(Month, Ozone) ) +
+  geom_point() +
+  stat_smooth(method = lm, formula = y ~ x)
+
+ggplot(airquality_new, aes(Day, Ozone) ) +
+  geom_point() +
+  stat_smooth(method = lm, formula = y ~ x)
+
+# all
+?ggarrange
+figure <- ggarrange(
+  ggplot(airquality_new, aes(Solar.R, Ozone) ) +
+    geom_point() +
+    stat_smooth(method = lm, formula = y ~ x),
+  
+  ggplot(airquality_new, aes(Wind, Ozone) ) +
+    geom_point() +
+    stat_smooth(method = lm, formula = y ~ x),
+  
+  ggplot(airquality_new, aes(Temp, Ozone) ) +
+    geom_point() +
+    stat_smooth(method = lm, formula = y ~ x),
+  
+  ggplot(airquality_new, aes(Month, Ozone) ) +
+    geom_point() +
+    stat_smooth(method = lm, formula = y ~ x),
+  
+  ggplot(airquality_new, aes(Day, Ozone) ) +
+    geom_point() +
+    stat_smooth(method = lm, formula = y ~ x),
+  
+                    labels = c("A", "B", "C", "D", "E"),
+                    ncol = 2, nrow = 3)
+
+figure
+
+# trivial additive model
+mod=lm(Ozone ~., data=airquality_new)
+summary(mod)
+par(mfrow=c(2,2))
+plot(mod)
+
+# linearity
+crPlots(mod)
+
+# Testing the Normality Assumption of the error term
+jarque.bera.test(mod$residuals)
+shapiro.test(mod$residuals)
+library(nortest) # Shapiro-Francia normality test
+sf.test(mod$residuals)
+
+# the null hypothesis is that the variance of the residuals is constant
+lmtest::bptest(mod)
+
+# H0: no autocorrelation of residuals
+acf(mod$residuals) 
+lawstat::runs.test(mod$residuals)
+lmtest::dwtest(mod)
+
+# endogeneity clue
+par(mfrow=c(3,2))
+plot(airquality_new$Solar.R, mod$residuals)
+plot(airquality_new$Wind, mod$residuals)
+plot(airquality_new$Temp, mod$residuals)
+plot(airquality_new$Month, mod$residuals)
+plot(airquality_new$Day, mod$residuals)
+
+# vif
+library(corrplot)
+corrplot(cor(airquality_new[, -1]))
+car::vif(mod)
+
+# try a different model
+
