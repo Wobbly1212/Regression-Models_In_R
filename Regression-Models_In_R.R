@@ -703,3 +703,143 @@ car::vif(mod)
 
 # try a different model
 
+################# let's focus only on Solar.R and Ozone to understand their relationship
+
+ggplot(airquality_new, aes(Solar.R, Ozone) ) +
+  geom_point() +
+  stat_smooth(method = lm, formula = y ~ x)
+lm(Ozone ~ Solar.R, data=airquality_new) %>% summary
+
+# maybe polynomial of order 2?
+ggplot(airquality_new, aes(Solar.R, Ozone) ) +
+  geom_point() +
+  stat_smooth(method = lm, formula = y ~ poly(x,2))
+lm(Ozone ~ Solar.R + I(Solar.R^2), data=airquality_new) %>% summary
+# better
+
+# maybe polynomial of order 3?
+ggplot(airquality_new, aes(Solar.R, Ozone) ) +
+  geom_point() +
+  stat_smooth(method = lm, formula = y ~ poly(x,3))
+lm(Ozone ~ poly(Solar.R, 3), data=airquality_new) %>% summary
+# better
+
+# maybe polynomial of order 4?
+ggplot(airquality_new, aes(Solar.R, Ozone) ) +
+  geom_point() +
+  stat_smooth(method = lm, formula = y ~ poly(x,4))
+lm(Ozone ~ poly(Solar.R, 4), data=airquality_new) %>% summary
+# worse
+
+# maybe linear-log?
+ggplot(airquality_new, aes(Solar.R, Ozone) ) +
+  geom_point() +
+  stat_smooth(method = lm, formula = y ~ log(x))
+lm(Ozone ~ log(Solar.R), data=airquality_new) %>% summary
+# better than linear
+
+# maybe log-linear?
+ggplot(airquality_new, aes(Solar.R, Ozone) ) +
+  geom_point() 
+  # stat_smooth(method = lm, formula = log(y) ~ x) # not a possibility in stat_smooth
+lm(log(Ozone) ~ Solar.R, data=airquality_new) %>% summary
+# good model
+
+# maybe log-log?
+ggplot(airquality_new, aes(Solar.R, Ozone) ) +
+  geom_point() 
+  # stat_smooth(method = lm, formula = log(y) ~ log(x)) # not a possibility in stat_smooth
+lm(log(Ozone) ~ log(Solar.R), data=airquality_new) %>% summary
+# good model
+
+
+#################  let's focus on Wind and Ozone
+
+ggplot(airquality_new, aes(Wind, Ozone) ) +
+  geom_point() +
+  stat_smooth(method = lm, formula = y ~ x)
+lm(Ozone ~ Wind, data=airquality_new) %>% summary
+# good model
+
+ggplot(airquality_new, aes(Wind, Ozone) ) +
+  geom_point() +
+  stat_smooth(method = lm, formula = y ~ poly(x,2))
+lm(Ozone ~ Wind + I(Wind^2), data=airquality_new) %>% summary
+# good model
+
+ggplot(airquality_new, aes(Wind, Ozone) ) +
+  geom_point() +
+  stat_smooth(method = lm, formula = y ~ poly(x,3))
+lm(Ozone ~ poly(Wind, 3), data=airquality_new) %>% summary
+# good model but not necessary
+
+ggplot(airquality_new, aes(Wind, Ozone) ) +
+  geom_point() +
+  stat_smooth(method = lm, formula = y ~ poly(x,4))
+lm(Ozone ~ poly(Wind, 4), data=airquality_new) %>% summary
+# good model but not necessary
+
+ggplot(airquality_new, aes(Wind, Ozone) ) +
+  geom_point() +
+  stat_smooth(method = lm, formula = y ~ log(x))
+lm(Ozone ~ log(Wind), data=airquality_new) %>% summary
+# nice
+
+ggplot(airquality_new, aes(Wind, Ozone) ) +
+  geom_point() 
+# stat_smooth(method = lm, formula = log(y) ~ x) # not a possibility in stat_smooth
+lm(log(Ozone) ~ Wind, data=airquality_new) %>% summary
+# nice
+
+ggplot(airquality_new, aes(Wind, Ozone) ) +
+  geom_point() 
+# stat_smooth(method = lm, formula = log(y) ~ log(x)) # not a possibility in stat_smooth
+lm(log(Ozone) ~ log(Wind), data=airquality_new) %>% summary
+# nice
+
+
+
+#################  let's focus on Temp and Ozone
+
+ggplot(airquality_new, aes(Temp, Ozone) ) +
+  geom_point() +
+  stat_smooth(method = lm, formula = y ~ x)
+lm(Ozone ~ Temp, data=airquality_new) %>% summary
+# good model
+
+ggplot(airquality_new, aes(Temp, Ozone) ) +
+  geom_point() +
+  stat_smooth(method = lm, formula = y ~ poly(x,2))
+lm(Ozone ~ Temp + I(Temp^2), data=airquality_new) %>% summary
+# good model
+
+ggplot(airquality_new, aes(Temp, Ozone) ) +
+  geom_point() +
+  stat_smooth(method = lm, formula = y ~ poly(x,3))
+lm(Ozone ~ poly(Temp, 3), data=airquality_new) %>% summary
+# good but not necessary
+
+ggplot(airquality_new, aes(Temp, Ozone) ) +
+  geom_point() +
+  stat_smooth(method = lm, formula = y ~ poly(x,4))
+lm(Ozone ~ poly(Temp, 4), data=airquality_new) %>% summary
+# very good model
+
+ggplot(airquality_new, aes(Temp, Ozone) ) +
+  geom_point() +
+  stat_smooth(method = lm, formula = y ~ log(x))
+lm(Ozone ~ log(Temp), data=airquality_new) %>% summary
+# better than linear
+
+ggplot(airquality_new, aes(Temp, Ozone) ) +
+  geom_point() 
+# stat_smooth(method = lm, formula = log(y) ~ x) # not a possibility in stat_smooth
+lm(log(Ozone) ~ Temp, data=airquality_new) %>% summary
+# very good model
+
+ggplot(airquality_new, aes(Temp, Ozone) ) +
+  geom_point() 
+# stat_smooth(method = lm, formula = log(y) ~ log(x)) # not a possibility in stat_smooth
+lm(log(Ozone) ~ log(Temp), data=airquality_new) %>% summary
+# very good model
+
