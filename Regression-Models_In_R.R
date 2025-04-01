@@ -1092,3 +1092,73 @@ plot(mod_new_3new)
 
 # we can continue to improve the model but now the reasoning is clear... try yourself!
 # always remember to not confound the names of the rows with the position of the units to delete
+
+###############################################################################
+######## Looking for moderation effects #######################################
+###############################################################################
+
+
+## interaction 1
+
+par(mfrow=c(2,2))
+
+mod=lm(Ozone ~ Solar.R * Wind + Temp, data = airquality_new)
+summary(mod)  
+plot(mod)
+extractAIC(mod)
+
+jarque.bera.test(mod$residuals) 
+shapiro.test(mod$residuals)  
+
+lmtest::bptest(mod) 
+acf(mod$residuals) 
+car::vif(mod)
+
+
+### interaction 2
+
+par(mfrow=c(2,2))
+
+mod=lm(Ozone ~ Solar.R + Wind * Temp, data = airquality_new)
+summary(mod)  
+plot(mod)
+extractAIC(mod)
+
+jarque.bera.test(mod$residuals)
+shapiro.test(mod$residuals) 
+
+lmtest::bptest(mod) 
+acf(mod$residuals) 
+car::vif(mod)
+
+### interaction 3
+
+par(mfrow=c(2,2))
+
+mod=lm(Ozone ~ Solar.R * Temp + Wind , data = airquality_new)
+summary(mod)  
+plot(mod)
+extractAIC(mod)
+
+jarque.bera.test(mod$residuals) 
+shapiro.test(mod$residuals) 
+
+lmtest::bptest(mod) 
+acf(mod$residuals) 
+car::vif(mod)
+
+###############################################################################
+######## Looking for mediation effects #######################################
+###############################################################################
+
+mod=lm(Ozone ~ Solar.R, data = airquality_new)
+summary(mod) 
+
+mod=lm(Temp ~ Solar.R, data = airquality_new)
+summary(mod) 
+
+mod=lm(Ozone ~ Solar.R + Temp , data = airquality_new)
+summary(mod) 
+
+# temp partializes the effect of solar radius on Ozone
+
