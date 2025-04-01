@@ -843,3 +843,252 @@ ggplot(airquality_new, aes(Temp, Ozone) ) +
 lm(log(Ozone) ~ log(Temp), data=airquality_new) %>% summary
 # very good model
 
+
+
+################################################################################
+#### now we have new information to look for an improved model #################
+####################################  first we focus on R^2 ####################
+################################################################################
+
+# previous trivial model was
+mod=lm(Ozone ~., data=airquality_new)
+summary(mod)
+par(mfrow=c(2,2))
+plot(mod)
+extractAIC(mod)
+
+# # automatic stepwise model
+# library(MASS)
+# best_step_model <- stepAIC(mod, direction = "both", trace = F)
+# summary(best_step_model)
+# extractAIC(best_step_model)
+
+par(new=F)
+
+# let's try our new model with log-log of the most important predictiors
+mod_new_1 = lm(log(Ozone) ~ log(Solar.R) + log(Wind) + log(Temp) 
+               + as.factor(Month), data=airquality_new)
+
+summary(mod_new_1)
+par(mfrow=c(2,2))
+plot(mod_new_1)
+extractAIC(mod_new_1)
+
+# month seems useless
+mod_new_2 = lm(log(Ozone) ~ log(Solar.R) + log(Wind) + log(Temp), data=airquality_new)
+summary(mod_new_2) # very good R^2!!!
+plot(mod_new_2)
+extractAIC(mod_new_2)
+
+# another possible model is that with polynomials
+mod_new_3 =  lm(Ozone ~ poly(Solar.R,2) + poly(Wind,2) + poly(Temp,2), data=airquality_new)
+summary(mod_new_3)  # very good R^2!!!
+plot(mod_new_3)
+
+extractAIC(mod_new_3)
+
+# another possible model is that with polynomials
+
+plot(mod_new_3)
+extractAIC(mod_new_3)
+
+
+###########################################
+# let's check some assumptions of mod_new_2
+###########################################
+
+par(new=F)
+
+mod_new_2 = lm(log(Ozone) ~ log(Solar.R) + log(Wind) + log(Temp), data=airquality_new)
+summary(mod_new_2) 
+
+jarque.bera.test(mod_new_2$residuals) # good!
+lmtest::bptest(mod_new_2)  # not good!
+acf(mod_new_2$residuals)  # good!
+
+par(mfrow=c(3,2))   # just a simple clue... Which variables could cause endogeneity?
+plot(airquality_new$Wind, mod_new_2$residuals)
+plot(airquality_new$Solar.R, mod_new_2$residuals)
+plot(airquality_new$Temp, mod_new_2$residuals)
+plot(airquality_new$Month, mod_new_2$residuals)
+plot(airquality_new$Day, mod_new_2$residuals)
+
+corrplot(cor(airquality_new[, -1]))
+car::vif(mod_new_2)   # good!
+
+# we have improved our R^2 and solved the normality assumption but not heteroscedasticity
+
+
+###########################################
+# let's check some assumptions of mod_new_3
+###########################################
+
+par(new=F)
+
+mod_new_3=lm(Ozone ~ poly(Solar.R, 2) + poly(Wind, 2) + poly(Temp, 2), data=airquality_new)
+summary(mod_new_3) 
+
+# one term seems to be useless
+mod_new_3=lm(Ozone ~ Solar.R + poly(Wind, 2) + poly(Temp, 2), data=airquality_new)
+summary(mod_new_3) 
+
+jarque.bera.test(mod_new_3$residuals) # bad!
+lmtest::bptest(mod_new_3) # bad!
+acf(mod_new_3$residuals)  # good!
+car::vif(mod_new_3)  # good!
+
+# we have improved our R^2 but not heteroscedasticity and normality 
+
+
+###########################################################################################
+############# let's focus on mod_new_2 and try to remove heteroscedasticity ###############
+###########################################################################################
+
+par(new=F)
+
+#last model log-log
+mod_new_2b = lm(log(Ozone) ~ log(Solar.R) + log(Wind) + log(Temp), data=airquality_new)
+summary(mod_new_2b)
+par(mfrow=c(2,2))
+plot(mod_new_2b)   # obs 28 and 21 are problematic
+jarque.bera.test(mod_new_2b$residuals)  # good!
+lmtest::bptest(mod_new_2b)  # not good!
+
+# let's try some changes in the model
+mod_new_2c = lm(log(Ozone) ~ Solar.R + Wind, data=airquality_new)
+summary(mod_new_2c) 
+jarque.bera.test(mod_new_2c$residuals)  # not good!
+lmtest::bptest(mod_new_2c)  # good!
+
+
+mod_new_2e = lm(log(Ozone) ~ log(Wind) * log(Temp), data=airquality_new)
+summary(mod_new_2e) 
+jarque.bera.test(mod_new_2e$residuals)  # not good!
+lmtest::bptest(mod_new_2e)  # not good!
+
+
+mod_new_2d = lm(log(Ozone) ~ Solar.R + Wind, data=airquality_new)
+summary(mod_new_2d) 
+jarque.bera.test(mod_new_2d$residuals)  # not good!
+lmtest::bptest(mod_new_2d)  # good! Temp causes heteroscedasticity but now residuals?
+par(new=F)
+hist(mod_new_2d$residuals)
+par(mfrow=c(2,2))
+plot(mod_new_2d)  # obs 21 is really problematic
+
+
+# let's try to remove those obs, changing the model does not solve all the problems
+
+# airquality_new_new=airquality_new[-21,]  
+# it's not the 21st residual... pay attention to rownames
+
+airquality_new["21",]
+
+rownames(airquality_new)=c(1:nrow(airquality_new))  # I rename the rows because I deleted NAs before
+
+# I run again the same model to understand which is the row to delete (if it is really the 21th)
+mod_new_2d = lm(log(Ozone) ~ Solar.R + Wind, data=airquality_new)
+plot(mod_new_2d)  # the real guilty is 17th not 19 (19 was the name not the position)
+
+# NO! Renaming the rows, the problematic obs is the 17th. I delete it.
+airquality_new_new=airquality_new[-17,]
+
+mod_new_2d = lm(log(Ozone) ~ Solar.R + Wind, data=airquality_new_new)
+summary(mod_new_2d) 
+jarque.bera.test(mod_new_2d$residuals) # good! Perfect model!
+lmtest::bptest(mod_new_2d)  # good! Perfect model!
+
+par(new=F)
+hist(mod_new_2d$residuals)
+par(mfrow=c(2,2))
+plot(mod_new_2d)  
+
+
+# now, without obs 17, is there a better model? Let's try.
+
+mod_new_2f = lm(log(Ozone) ~ log(Solar.R) + log(Wind) * log(Temp), data=airquality_new_new)
+summary(mod_new_2f)   # really interesting!
+jarque.bera.test(mod_new_2f$residuals) # good
+lmtest::bptest(mod_new_2f)    # really interesting! Quite good!
+
+par(mfrow=c(2,2))
+
+plot(mod_new_2f) 
+
+
+# remove unit 20 - now it's the 19th row (20 is the name not the position)
+
+airquality_new_new_new=airquality_new_new[-19,]
+
+mod_new_2nnn = lm(log(Ozone) ~ log(Solar.R) + log(Wind) * log(Temp), data=airquality_new_new)
+summary(mod_new_2nnn)   # really interesting!
+
+jarque.bera.test(mod_new_2nnn$residuals) # good
+lmtest::bptest(mod_new_2nnn)    # really interesting! Quite good!
+
+hist(mod_new_2nnn$residuals)
+plot(mod_new_2nnn) 
+
+# remove non-significant interaction and try another interaction
+
+mod_new_2nnn = lm(log(Ozone) ~ log(Solar.R) * log(Temp) + log(Wind), data=airquality_new_new_new)
+summary(mod_new_2nnn)   # GOOD MODEL! 
+
+jarque.bera.test(mod_new_2nnn$residuals) 
+lmtest::bptest(mod_new_2nnn)   # GOOD FINAL MODEL! High R^2, NO Heteroscedasticity, Normality
+
+hist(mod_new_2nnn$residuals)
+
+par(mfrow=c(2,2))
+plot(mod_new_2nnn) 
+
+
+###########################################################################################
+############# let's focus on mod_new_3 and try to remove heteroscedasticity ###############
+###########################################################################################
+
+# we that we have understood how outliers can influence our model
+# let's try also to fix the problems with the polynomial model
+
+par(new=F)
+
+# let's start again from the original data, now influencial points could be different 
+rownames(airquality_new)=c(1:nrow(airquality_new))
+
+mod_new_3=lm(Ozone ~ Solar.R + poly(Wind, 2) + Temp, data=airquality_new)
+summary(mod_new_3) 
+
+jarque.bera.test(mod_new_3$residuals) # bad!
+lmtest::bptest(mod_new_3) # quite bad!
+acf(mod_new_3$residuals)  # good!
+car::vif(mod_new_3)  # good!
+
+# we have interesting instruments to understand which points must be deleted
+par(new=F)
+influence.measures(mod_new_3)
+?influencePlot
+influencePlot(mod_new_3) # areas of the circles representing the observations proportional to the value Cook's distance
+influence(mod_new_3)
+influenceIndexPlot(mod_new_3)
+
+par(mfrow=c(2,2))
+plot(mod_new_3)
+
+# try to remove units 53, 77 
+airquality_new2=airquality_new[-c(53, 77),]
+
+mod_new_3new=lm(Ozone ~ Solar.R + poly(Wind, 2) + Temp, data=airquality_new2)
+summary(mod_new_3new)   # INTERESTING MODEL but the log-log is better
+
+jarque.bera.test(mod_new_3new$residuals) # easy to improve! We are close.
+lmtest::bptest(mod_new_3new) # good!
+acf(mod_new_3new$residuals)  # good!
+car::vif(mod_new_3new)  # good!
+
+influenceIndexPlot(mod_new_3new)
+
+par(mfrow=c(2,2))
+plot(mod_new_3new)
+
+# we can continue to improve the model but now the reasoning is clear... try yourself!
+# always remember to not confound the names of the rows with the position of the units to delete
